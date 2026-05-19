@@ -1,0 +1,6 @@
+{
+  "name": "AI Photo Studio",
+  "description": "A professional AI-powered photo editing suite with advanced tools and SaaS-style interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
