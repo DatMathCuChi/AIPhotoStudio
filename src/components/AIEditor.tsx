@@ -6,6 +6,8 @@ import { motion } from 'motion/react';
 interface AIEditorProps {
   onGenerate: (prompt: string, mode: string) => void;
   isProcessing: boolean;
+  hasApiKey: boolean;
+  onGoToSettings: () => void;
 }
 
 const AI_TOOLS = [
@@ -25,7 +27,7 @@ const PRESETS = [
   "Poster quảng cáo cao cấp",
 ];
 
-export default function AIEditor({ onGenerate, isProcessing }: AIEditorProps) {
+export default function AIEditor({ onGenerate, isProcessing, hasApiKey, onGoToSettings }: AIEditorProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedTool, setSelectedTool] = useState('');
 
@@ -36,6 +38,23 @@ export default function AIEditor({ onGenerate, isProcessing }: AIEditorProps) {
 
   return (
     <div className="flex flex-col gap-8 h-full">
+      {!hasApiKey && (
+        <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20">
+          <div className="flex items-center gap-2 text-orange-500 mb-2">
+            <Zap className="w-4 h-4 fill-orange-500" />
+            <span className="text-xs font-bold uppercase tracking-wider">Lưu ý Demo</span>
+          </div>
+          <p className="text-[10px] text-orange-500/80 leading-relaxed mb-3">
+            Bạn chưa cấu hình Gemini API Key. AI sẽ chạy ở chế độ Demo (không thay đổi ảnh thật).
+          </p>
+          <button 
+            onClick={onGoToSettings}
+            className="w-full py-2 bg-orange-500 text-white text-[10px] font-bold rounded-lg hover:bg-orange-600 transition-all"
+          >
+            Cấu hình API Key ngay
+          </button>
+        </div>
+      )}
       <div className="space-y-4">
         <h4 className="text-sm font-semibold text-white/90">Công cụ AI nhanh</h4>
         <div className="grid grid-cols-2 gap-3">

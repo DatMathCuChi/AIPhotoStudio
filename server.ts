@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -15,17 +15,10 @@ async function startServer() {
 
   // Initialize Gemini
   const apiKey = process.env.GEMINI_API_KEY;
-  let ai: GoogleGenAI | null = null;
+  let ai: GoogleGenerativeAI | null = null;
   
   if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
-    ai = new GoogleGenAI({
-      apiKey: apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
+    ai = new GoogleGenerativeAI(apiKey);
   }
 
   // API Routes
@@ -44,45 +37,44 @@ async function startServer() {
 
   app.post("/api/ai/edit", async (req, res) => {
     try {
-      const { prompt, image, mode } = req.body;
+      const { prompt, image, mode, userApiKey } = req.body;
       
       if (!image) {
         return res.status(400).json({ error: "No image provided" });
       }
 
-      if (!ai) {
-        // Demo mode / Mock response
-        console.log("Gemini API key not found, running in demo mode.");
+      const effectiveKey = userApiKey || apiKey;
+      
+      if (!effectiveKey || effectiveKey === "MY_GEMINI_API_KEY") {
         return res.json({ 
           success: true, 
           message: "AI processing completed (Demo Mode)", 
-          image: image, // Just echoing back for demo
+          image: image,
           isDemo: true 
         });
       }
 
-      const parts = [
+      const activeAi = new GoogleGenerativeAI(effectiveKey);
+      const model = activeAi.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const parts: any[] = [
+        { text: `Edit this image according to this prompt: ${prompt}. Mode: ${mode}` },
         { inlineData: { data: image.split(',')[1], mimeType: "image/png" } },
-        { text: `Edit this image according to this prompt: ${prompt}. Mode: ${mode}` }
       ];
 
-      const result = await ai.models.generateContent({
-        model: "gemini-1.5-flash", // Using a stable model name
-        contents: { parts }
-      });
+      const result = await model.generateContent(parts);
+      const responseText = result.response.text();
 
       res.json({ 
         success: true, 
-        analysis: result.text,
-        image: image, // Simulation: just return same image for now
+        analysis: responseText,
+        image: image, // Simulation: for true image-to-image, we should return the edited one
         isDemo: false
       });
     } catch (error: any) {
       console.error("AI Error:", error);
-      // Ensure we always return JSON
       res.status(500).json({ 
-        error: error.message || "An unknown error occurred during AI processing",
-        stack: isProd ? undefined : error.stack
+        error: error.message || "An unknown error occurred during AI processing"
       });
     }
   });

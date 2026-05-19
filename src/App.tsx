@@ -17,6 +17,7 @@ export default function App() {
   const [activeTool, setActiveTool] = useState<ToolType>('home');
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('gemini_api_key') || '');
   const [settings, setSettings] = useState<EditSettings>(DEFAULT_SETTINGS);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -68,7 +69,7 @@ export default function App() {
       const response = await fetch('/api/ai/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, image: originalImage, mode }),
+        body: JSON.stringify({ prompt, image: originalImage, mode, userApiKey: apiKey }),
       });
       
       const contentType = response.headers.get('content-type');
@@ -119,7 +120,14 @@ export default function App() {
       case 'basic':
         return <BasicEditor settings={settings} setSettings={setSettings} onReset={resetImage} />;
       case 'ai':
-        return <AIEditor onGenerate={handleAIEdit} isProcessing={isProcessing} />;
+        return (
+          <AIEditor 
+            onGenerate={handleAIEdit} 
+            isProcessing={isProcessing} 
+            hasApiKey={!!apiKey}
+            onGoToSettings={() => setActiveTool('account')}
+          />
+        );
       case 'templates':
         return <TemplateGallery />;
       case 'export':
@@ -244,7 +252,7 @@ export default function App() {
                   className="flex-1 flex flex-col overflow-hidden"
                 >
                   {activeTool === 'account' ? (
-                    <AccountPanel />
+                    <AccountPanel apiKey={apiKey} setApiKey={setApiKey} />
                   ) : (
                     <CanvasArea 
                       originalImage={originalImage} 

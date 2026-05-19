@@ -2,17 +2,29 @@ import React from 'react';
 import { User, Crown, CreditCard, Shield, Settings, LogOut, Zap } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
-export default function AccountPanel() {
+interface AccountPanelProps {
+  apiKey: string;
+  setApiKey: (key: string) => void;
+}
+
+export default function AccountPanel({ apiKey, setApiKey }: AccountPanelProps) {
+  const handleKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newKey = e.target.value;
+    setApiKey(newKey);
+    localStorage.setItem('gemini_api_key', newKey);
+  };
+
   return (
-    <div className="flex-1 flex items-center justify-center p-8 bg-black/60">
+    <div className="flex-1 flex items-center justify-center p-8 bg-black/60 overflow-y-auto">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-12">
         <div className="space-y-8">
+          {/* ... existing header ... */}
           <div className="flex items-center gap-6">
             <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center text-3xl font-bold shadow-2xl">
               JD
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">John Doe</h2>
+              <h2 className="text-2xl font-bold text-white">Người dùng</h2>
               <p className="text-white/40 text-sm">Thành viên miễn phí từ tháng 5/2024</p>
               <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white/10 text-[10px] font-bold text-white/60">
                 <Shield className="w-3 h-3" />
@@ -21,6 +33,33 @@ export default function AccountPanel() {
             </div>
           </div>
 
+          <div className="space-y-4 p-6 rounded-3xl bg-white/[0.04] border border-white/5">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Settings className="w-5 h-5 text-orange-500" />
+              Cấu hình AI
+            </h3>
+            <div className="space-y-2">
+              <label className="text-[10px] text-white/40 uppercase font-bold">Gemini API Key</label>
+              <div className="relative">
+                <input 
+                  type="password" 
+                  value={apiKey}
+                  onChange={handleKeyChange}
+                  placeholder="Nhập API Key của bạn..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-orange-500 outline-none transition-all pr-10"
+                />
+                <Zap className={cn(
+                  "absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
+                  apiKey ? "text-orange-500" : "text-white/10"
+                )} />
+              </div>
+              <p className="text-[10px] text-white/20 leading-relaxed">
+                Key của bạn được lưu an toàn trong trình duyệt (Local Storage) và chỉ được sử dụng để gọi API AI.
+              </p>
+            </div>
+          </div>
+          
+          {/* ... rest of original content ... */}
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
               <p className="text-white/40 text-xs mb-1">Tổng chỉnh sửa</p>
