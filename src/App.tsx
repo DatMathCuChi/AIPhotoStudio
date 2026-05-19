@@ -25,12 +25,24 @@ export default function App() {
 
   // Check health on load
   useEffect(() => {
-    fetch('/api/health')
-      .then(res => res.json())
-      .then(data => {
-        setIsAiDemo(!data.aiEnabled);
-      })
-      .catch(() => setIsAiDemo(true));
+    const checkHealth = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) throw new Error('Health check failed');
+        
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await res.json();
+          setIsAiDemo(!data.aiEnabled);
+        } else {
+          setIsAiDemo(true);
+        }
+      } catch (err) {
+        console.error('Health check error:', err);
+        setIsAiDemo(true);
+      }
+    };
+    checkHealth();
   }, []);
 
   const handleUpload = (file: File) => {
@@ -59,12 +71,25 @@ export default function App() {
         body: JSON.stringify({ prompt, image: originalImage, mode }),
       });
       
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text);
+        throw new Error('Máy chủ trả về phản hồi không hợp lệ. Vui lòng thử lại sau.');
+      }
+
       const data = await response.json();
       
-      if (data.error) throw new Error(data.error);
+      if (!response.ok) {
+        throw new Error(data.error || 'Đã xảy ra lỗi khi xử lý AI');
+      }
       
       setProcessedImage(data.image);
       setActiveTool('ai');
+      
+      if (data.isDemo) {
+        setError('Chế độ AI Demo: API Key Gemini chưa được cấu hình. Đang hiển thị kết quả mẫu.');
+      }
       
       // Save to history
       const newItem: HistoryItem = {
@@ -77,7 +102,8 @@ export default function App() {
       };
       setHistory(prev => [newItem, ...prev]);
     } catch (err: any) {
-      setError(err.message || 'AI processing failed');
+      console.error('AI Edit Error:', err);
+      setError(err.message || 'Xử lý AI thất bại');
     } finally {
       setIsProcessing(false);
     }

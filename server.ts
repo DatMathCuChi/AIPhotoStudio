@@ -30,45 +30,44 @@ async function startServer() {
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", aiEnabled: !!ai });
+    try {
+      res.json({ 
+        status: "ok", 
+        aiEnabled: !!ai,
+        demoMode: !ai,
+        message: ai ? "AI services are ready." : "AI demo mode: Gemini API key is not configured."
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   app.post("/api/ai/edit", async (req, res) => {
-    const { prompt, image, mode } = req.body;
-    
-    if (!image) {
-      return res.status(400).json({ error: "No image provided" });
-    }
-
-    if (!ai) {
-      // Demo mode / Mock response
-      console.log("Gemini API key not found, running in demo mode.");
-      // In a real demo, we might just return the original image or a modified placeholder
-      // For now, let's pretend we processed it
-      return res.json({ 
-        success: true, 
-        message: "AI processing completed (Demo Mode)", 
-        image: image, // Just echoing back for demo
-        isDemo: true 
-      });
-    }
-
     try {
-      // Simple AI logic: Use Gemini to analyze or describe?
-      // Actually, for "Image Generation and Editing", we use gemini-2.5-flash-image
-      // but if we just want to demo the *interface* sending data to the server:
+      const { prompt, image, mode } = req.body;
       
+      if (!image) {
+        return res.status(400).json({ error: "No image provided" });
+      }
+
+      if (!ai) {
+        // Demo mode / Mock response
+        console.log("Gemini API key not found, running in demo mode.");
+        return res.json({ 
+          success: true, 
+          message: "AI processing completed (Demo Mode)", 
+          image: image, // Just echoing back for demo
+          isDemo: true 
+        });
+      }
+
       const parts = [
         { inlineData: { data: image.split(',')[1], mimeType: "image/png" } },
         { text: `Edit this image according to this prompt: ${prompt}. Mode: ${mode}` }
       ];
 
-      // Note: gemini-2.5-flash-image is for generation/editing.
-      // For now, I'll use gemini-3-flash-preview to "analyze" and simulate if real editing isn't available
-      // or use the correct model for editing if it supports it.
-      
       const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-1.5-flash", // Using a stable model name
         contents: { parts }
       });
 
@@ -80,7 +79,11 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("AI Error:", error);
-      res.status(500).json({ error: error.message });
+      // Ensure we always return JSON
+      res.status(500).json({ 
+        error: error.message || "An unknown error occurred during AI processing",
+        stack: isProd ? undefined : error.stack
+      });
     }
   });
 
